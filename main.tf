@@ -34,6 +34,6 @@ resource "aws_instance" "server" {
   security_groups = ["Oracle Database 11-2-0-4 Enterprise Edition -Oracle Enterprise Linux 7-5-v0-1-AutogenByAWSMP-"]
 
   # SSH KEY
-  key_name = "oracleKey"
+  key_name = "DevopsKey"
 
 }
