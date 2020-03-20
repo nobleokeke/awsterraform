@@ -38,7 +38,7 @@ else
  exit 1;
 fi
 
-echo "yes" | ssh-add /scripts/keys/oracleKey.pem
+echo "yes" | ssh-add /scripts/keys/DevopsKey.pem
 
 sleep 5m
 
