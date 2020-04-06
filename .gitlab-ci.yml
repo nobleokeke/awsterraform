@@ -1,0 +1,95 @@
+## global job variables
+image:
+  name: hashicorp/terraform:light
+  entrypoint:
+    - '/usr/bin/env'
+    - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
+cache:
+  paths:
+    - .terraform
+
+before_script:
+  - echo $SSH_KEY > id_rsa.pub
+  - echo $SERVICEACCOUNT | base64 -d > ./account.json
+
+## define stages
+stages:
+  - plan
+  - provision
+  - deploy
+  - destroy
+
+## jobs in plan stage
+validate:
+  stage: plan
+  script:
+    - terraform validate
+
+plan:
+  stage: plan
+  script:
+    - terraform --version
+    - terraform init
+    - terraform plan -out=tfplan -input=false
+  artifacts:
+    name: tfplan
+    paths:
+      - ./tfplan
+    expire_in: 1 hour
+
+## jobs in apply stage
+provision:
+  stage: provision
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  script:
+    - terraform --version
+    - terraform init
+    - terraform apply -input=false tfplan
+  after_script:
+    - mkdir artifacts # can't store multiple artifact definitions, so this is a workaround
+    - terraform output ip > artifacts/external_ip.txt
+    - mv tfplan artifacts/tfplan
+    - mv terraform.tfstate artifacts/terraform.tfstate
+  artifacts:
+    name: tfplan
+    paths:
+      - "./artifacts/*"
+    expire_in: 1 hour
+  only:
+    - master
+
+deploy:
+  stage: deploy
+  image: python:3.6
+  script:
+    - pip install ansible
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - mkdir -p /home/$(whoami)/.ssh
+    - export ANSIBLE_FORCE_COLOR=true
+    - export ANSIBLE_REMOTE_USER="eggshell"
+    - export ANSIBLE_HOST_KEY_CHECKING=False
+    - export IP_ADDR=$(cat artifacts/external_ip.txt)
+    - sed -i "s/REPLACE_WITH_IP/$IP_ADDR/g" hosts
+    - eval `ssh-agent -s`
+    - ssh-add <(echo "$KEY")
+    - ansible-playbook --become -i hosts --private-key="/home/ec2-user/.ssh/id_rsa" pre-install.yml
+  only:
+    - master
+
+## jobs in destroy stage
+
+destroy:
+  stage: destroy
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  script:
+    - terraform --version
+    - terraform init
+    - mv artifacts/tfplan ./tfplan
+    - mv artifacts/terraform.tfstate ./terraform.tfstate
+    - terraform destroy -auto-approve
+  when: manual
+  only:
+    - master

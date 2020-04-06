@@ -43,5 +43,5 @@ echo "yes" | ssh-add /scripts/keys/DevopsKey.pem
 sleep 5m
 
 # run Ansible playbook - provisioning
-ansible-playbook pre-install.yml
+echo "yes" ansible-playbook pre-install.yml
 
