@@ -11,15 +11,15 @@ variable "availability-zone" {
 }
 
 variable "host-tag" {
- default = "Oracle Dev"
+ default = "NobleDB"
 }
 
 variable "security-group" {
- default = "Oracle Database 11-2-0-4 Enterprise Edition -Oracle Enterprise Linux 7-5-v0-1-AutogenByAWSMP-"
+ default = "DemoSecurityGroup"
 }
 
 variable "ec2-key" {
- default = "oracleKey"
+ default = "DevopsKey"
 }
 
 variable "root-ebs-size" {
